@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "crons": [
+    {
+      "path": "/api/triggers/time",
+      "schedule": "0 14 * * 1-5"
+    },
+    {
+      "path": "/api/triggers/price",
+      "schedule": "0 */2 * * 1-5"
+    }
+  ]
+}

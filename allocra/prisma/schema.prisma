@@ -1,0 +1,244 @@
+// Allocra - Smart DCA Alert Platform
+// Prisma Schema for MongoDB
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// User Management
+// ============================================
+
+model User {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  email         String    @unique
+  name          String?
+  passwordHash  String?   // For future auth implementation
+  emailVerified Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  dcaPlans      DcaPlan[]
+  alertEvents   AlertEvent[]
+
+  @@map("users")
+}
+
+// ============================================
+// Stock Data
+// ============================================
+
+model Stock {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  symbol        String    @unique  // e.g., "AAPL", "GOOGL"
+  name          String               // e.g., "Apple Inc."
+  exchange      String?              // e.g., "NASDAQ", "NYSE"
+  currency      String    @default("USD")
+  isActive      Boolean   @default(true)
+  lastPrice     Float?               // Cached current price
+  lastPriceAt   DateTime?            // When lastPrice was fetched
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  priceHistory  StockPriceHistory[]
+  dcaPlans      DcaPlan[]
+
+  @@map("stocks")
+}
+
+model StockPriceHistory {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  stockId   String    @db.ObjectId
+  price     Float
+  open      Float?
+  high      Float?
+  low       Float?
+  close     Float?
+  volume    Int?
+  date      DateTime
+  createdAt DateTime  @default(now())
+
+  // Relations
+  stock     Stock     @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@unique([stockId, date])
+  @@map("stock_price_history")
+}
+
+// ============================================
+// DCA Plans
+// ============================================
+
+enum DcaPlanType {
+  TOTAL_INVESTMENT  // Fixed total amount to invest over time
+  MONTHLY           // Recurring monthly investment amount
+}
+
+enum TriggerType {
+  PRICE_BASED       // Trigger when price hits certain thresholds
+  TIME_BASED        // Trigger on schedule (daily, weekly, monthly)
+  HYBRID            // Both price and time conditions
+}
+
+enum DcaPlanStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+model DcaPlan {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String        @db.ObjectId
+  stockId         String        @db.ObjectId
+  
+  name            String                      // User-friendly plan name
+  planType        DcaPlanType                 // Total investment or monthly
+  triggerType     TriggerType   @default(TIME_BASED)
+  status          DcaPlanStatus @default(DRAFT)
+  
+  // Investment amounts
+  totalAmount     Float?                      // For TOTAL_INVESTMENT type
+  monthlyAmount   Float?                      // For MONTHLY type
+  targetShares    Float?                      // Optional: target number of shares
+  
+  // Time-based trigger settings
+  frequency       String?                     // "daily", "weekly", "monthly"
+  dayOfWeek       Int?                        // 0-6 (Sunday-Saturday) for weekly
+  dayOfMonth      Int?                        // 1-31 for monthly
+  executionTime   String?                     // "09:30" format
+  
+  // Price-based trigger settings
+  priceDropPercent    Float?                  // Trigger when price drops X%
+  priceTargetLow      Float?                  // Buy when price goes below
+  priceTargetHigh     Float?                  // Stop buying when price exceeds
+  
+  // Plan duration
+  startDate       DateTime      @default(now())
+  endDate         DateTime?                   // Optional end date
+  
+  // Progress tracking
+  totalInvested   Float         @default(0)
+  totalShares     Float         @default(0)
+  averagePrice    Float?
+  
+  // Notification settings
+  emailNotifications  Boolean   @default(true)
+  notifyOnTrigger     Boolean   @default(true)
+  notifyOnComplete    Boolean   @default(true)
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stock           Stock         @relation(fields: [stockId], references: [id])
+  steps           DcaStep[]
+  alertEvents     AlertEvent[]
+
+  @@map("dca_plans")
+}
+
+// ============================================
+// DCA Steps (Individual Buy Actions)
+// ============================================
+
+enum DcaStepStatus {
+  PENDING           // Scheduled but not yet triggered
+  TRIGGERED         // Alert sent, waiting for user action
+  EXECUTED          // User confirmed purchase
+  SKIPPED           // User skipped this step
+  CANCELLED         // Step was cancelled
+}
+
+model DcaStep {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  planId          String        @db.ObjectId
+  
+  stepNumber      Int                         // Sequential step number
+  status          DcaStepStatus @default(PENDING)
+  
+  // Scheduled details
+  scheduledDate   DateTime?                   // When this step is scheduled
+  triggerPrice    Float?                      // Price that triggered this step
+  
+  // Recommended action
+  recommendedAmount   Float                   // Suggested investment amount
+  recommendedShares   Float?                  // Suggested shares to buy
+  
+  // Actual execution (when user confirms)
+  executedAt      DateTime?
+  actualPrice     Float?                      // Price at execution
+  actualAmount    Float?                      // Actual amount invested
+  actualShares    Float?                      // Actual shares bought
+  
+  notes           String?                     // User notes
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  plan            DcaPlan       @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@map("dca_steps")
+}
+
+// ============================================
+// Alert Events (Notification History)
+// ============================================
+
+enum AlertEventType {
+  TRIGGER_FIRED         // DCA trigger condition met
+  STEP_REMINDER         // Reminder for pending step
+  PLAN_STARTED          // Plan activated
+  PLAN_COMPLETED        // Plan finished
+  PLAN_PAUSED           // Plan paused
+  PRICE_ALERT           // Price threshold alert
+  WEEKLY_SUMMARY        // Weekly investment summary
+}
+
+enum AlertDeliveryStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  BOUNCED
+}
+
+model AlertEvent {
+  id              String              @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String              @db.ObjectId
+  planId          String?             @db.ObjectId
+  
+  eventType       AlertEventType
+  title           String
+  message         String
+  metadata        Json?                           // Additional event data
+  
+  // Delivery tracking
+  deliveryStatus  AlertDeliveryStatus @default(PENDING)
+  deliveredAt     DateTime?
+  failureReason   String?
+  
+  // User interaction
+  isRead          Boolean             @default(false)
+  readAt          DateTime?
+  
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  // Relations
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan            DcaPlan?            @relation(fields: [planId], references: [id], onDelete: SetNull)
+
+  @@map("alert_events")
+}

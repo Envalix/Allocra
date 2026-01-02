@@ -1,0 +1,20 @@
+# Dependencies
+node_modules
+
+# Build outputs
+.next
+out
+build
+dist
+
+# Generated files
+*.lock
+package-lock.json
+
+# Prisma
+prisma/generated
+
+# Misc
+.vercel
+.env*
+!.env.example

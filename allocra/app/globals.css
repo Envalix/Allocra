@@ -1,0 +1,210 @@
+/**
+ * Global Styles
+ *
+ * Tailwind CSS v4 with DaisyUI integration.
+ * Mobile-first responsive design.
+ */
+
+@import 'tailwindcss';
+
+/* Import DaisyUI themes */
+@plugin "daisyui" {
+  themes: light --default, dark;
+}
+
+/* ================================
+   CSS Custom Properties (Theme)
+   ================================ */
+
+:root {
+  /* Allocra Brand Colors */
+  --allocra-primary: #2563eb;
+  --allocra-secondary: #7c3aed;
+  --allocra-accent: #10b981;
+  --allocra-dark: #0f172a;
+  --allocra-light: #f8fafc;
+
+  /* Animation Timings */
+  --transition-fast: 150ms;
+  --transition-normal: 250ms;
+  --transition-slow: 350ms;
+}
+
+/* ================================
+   Base Styles
+   ================================ */
+
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Focus styles for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--allocra-primary);
+  outline-offset: 2px;
+}
+
+/* ================================
+   Typography
+   ================================ */
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+/* ================================
+   Responsive Utilities
+   ================================ */
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Safe area padding for mobile devices with notches */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ================================
+   Animation Classes
+   ================================ */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in var(--transition-normal) ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up var(--transition-slow) ease-out;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+/* ================================
+   Component Overrides
+   ================================ */
+
+/* DaisyUI Navbar tweaks */
+.navbar {
+  min-height: 4rem;
+}
+
+/* Card hover effects */
+.card {
+  transition: transform var(--transition-normal) ease,
+    box-shadow var(--transition-normal) ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+/* Button transitions */
+.btn {
+  transition: all var(--transition-fast) ease;
+}
+
+/* ================================
+   Gradient Utilities
+   ================================ */
+
+.gradient-primary {
+  background: linear-gradient(135deg, var(--allocra-primary) 0%, var(--allocra-secondary) 100%);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--allocra-primary) 0%, var(--allocra-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ================================
+   Glass Effect
+   ================================ */
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+[data-theme="dark"] .glass-card {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ================================
+   Mobile-First Spacing
+   ================================ */
+
+.section-padding {
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+
+@media (min-width: 768px) {
+  .section-padding {
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .section-padding {
+    padding-top: 6rem;
+    padding-bottom: 6rem;
+  }
+}
