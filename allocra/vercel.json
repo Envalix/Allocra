@@ -9,7 +9,7 @@
     },
     {
       "path": "/api/triggers/price",
-      "schedule": "0 */2 * * 1-5"
+      "schedule": "0 15 * * 1-5"
     }
   ]
 }
